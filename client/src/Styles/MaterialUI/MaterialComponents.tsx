@@ -76,7 +76,7 @@ export const CourseButton = withStyles({
 		height: "10rem",
 		width: "15rem",
 		marginRight: "1.5rem",
-		marginTop: "1rem",
+		marginBottom: "1.5rem",
 		color: "white",
 		fontSize: "1rem",
 		fontFamily: "'Poppins', sans-serif",

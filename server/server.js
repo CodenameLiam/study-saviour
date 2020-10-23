@@ -52,6 +52,106 @@ app.use(cors({ origin: "http://localhost:3000" }));
 // Notes
 // ======================================================================================
 
+// Gets a particular users uploaded notes
+app.post("/api/notes/user", async (req, res) => {
+	try {
+		const { user } = req.body;
+
+		const redisUserLikesKey = `/api/likes/${user}`;
+		const redisUserNotesKey = `/api/notes/user/${user}`;
+
+		// If a users likes are cached...
+		redisClient.get(redisUserLikesKey, async (err, userResult) => {
+			if (userResult) {
+				const userLikes = JSON.parse(userResult);
+
+				// Check if notes for the course are cached, otherwise get the notes
+				redisClient.get(redisUserNotesKey, async (err, courseResult) => {
+					if (courseResult) {
+						const notes = JSON.parse(courseResult);
+						const sortedNotes = sortNotes(notes, userLikes);
+						console.log("Redis notes, Redis likes");
+						res.status(200).json(sortedNotes);
+					} else {
+						const notes = await getCloudUsereNotes(user);
+						const sortedNotes = sortNotes(notes, userLikes);
+						redisClient.setex(redisUserNotesKey, 1800, JSON.stringify(notes));
+						redisClient.setex(redisUserLikesKey, 3600, JSON.stringify(userLikes));
+						console.log("Firestore notes, Redis likes");
+						res.status(200).json(sortedNotes);
+					}
+				});
+				// Get all data from the cloud
+			} else {
+				let userSnapshot = await userRef.doc(user).get();
+				if (!userSnapshot.exists) {
+					await userRef.doc(user).set({ likes: [], notes: [], courses: [] });
+					userSnapshot = await userRef.doc(user).get();
+				}
+				const userLikes = userSnapshot.data().likes;
+				const notes = await getCloudUsereNotes(user);
+				const sortedNotes = sortNotes(notes, userLikes);
+				redisClient.setex(redisUserNotesKey, 1800, JSON.stringify(notes));
+				redisClient.setex(redisUserLikesKey, 3600, JSON.stringify(userLikes));
+				console.log("Firestore notes, Firestore likes");
+				res.status(200).json(sortedNotes);
+			}
+		});
+	} catch (error) {
+		console.log(error);
+		res.status(500).send(error);
+	}
+});
+
+// Gets a particular users liked notes
+app.post("/api/notes/user/liked", async (req, res) => {
+	try {
+		const { user } = req.body;
+		const redisUserLikedNotesKey = `/api/notes/liked/${user}`;
+
+		// If a users likes are cached...
+		redisClient.get(redisUserLikedNotesKey, async (err, result) => {
+			if (result) {
+				const sortedNotes = JSON.parse(result);
+				console.log("From Redis");
+				res.status(200).json(sortedNotes);
+			} else {
+				const sortedNotes = await getCloudUserNoteLikes(user);
+				redisClient.setex(redisUserLikedNotesKey, 3600, JSON.stringify(sortedNotes));
+				console.log("From Firestore");
+				res.status(200).json(sortedNotes);
+			}
+		});
+	} catch (error) {
+		console.log(error);
+	}
+});
+
+// Gets notes from Firestore
+async function getCloudUserNoteLikes(user) {
+	try {
+		let notes = [];
+
+		const userSnapshot = await userRef.doc(user).get();
+
+		const userLikes = userSnapshot.data().likes;
+
+		for (let note of userLikes) {
+			const noteSnapshot = await notesRef.doc(note).get();
+			const noteDoc = noteSnapshot.data();
+			const likeSnapshot = await likesRef.where("note", "==", noteDoc.id).get();
+			const likeDocs = likeSnapshot.docs.map((doc) => doc.data());
+			noteDoc.likes = likeDocs;
+			notes.push(noteDoc);
+		}
+
+		const sortedNotes = sortNotes(notes, userLikes);
+		return sortedNotes;
+	} catch (error) {
+		console.log(error);
+	}
+}
+
 // Gets the top notes for a particular couse
 app.post("/api/notes/course/:course", async (req, res) => {
 	try {
@@ -104,57 +204,6 @@ app.post("/api/notes/course/:course", async (req, res) => {
 	}
 });
 
-// Gets a particular users notes
-app.post("/api/notes/user", async (req, res) => {
-	try {
-		const { user } = req.body;
-
-		const redisUserLikesKey = `/api/likes/${user}`;
-		const redisUserNotesKey = `/api/notes/user/${user}`;
-
-		// If a users likes are cached...
-		redisClient.get(redisUserLikesKey, async (err, userResult) => {
-			if (userResult) {
-				const userLikes = JSON.parse(userResult);
-
-				// Check if notes for the course are cached, otherwise get the notes
-				redisClient.get(redisUserNotesKey, async (err, courseResult) => {
-					if (courseResult) {
-						const notes = JSON.parse(courseResult);
-						const sortedNotes = sortNotes(notes, userLikes);
-						console.log("Redis notes, Redis likes");
-						res.status(200).json(sortedNotes);
-					} else {
-						const notes = await getCloudUsereNotes(user);
-						const sortedNotes = sortNotes(notes, userLikes);
-						redisClient.setex(redisUserNotesKey, 1800, JSON.stringify(notes));
-						redisClient.setex(redisUserLikesKey, 3600, JSON.stringify(userLikes));
-						console.log("Firestore notes, Redis likes");
-						res.status(200).json(sortedNotes);
-					}
-				});
-				// Get all data from the cloud
-			} else {
-				let userSnapshot = await userRef.doc(user).get();
-				if (!userSnapshot.exists) {
-					await userRef.doc(user).set({ likes: [], notes: [], courses: [] });
-					userSnapshot = await userRef.doc(user).get();
-				}
-				const userLikes = userSnapshot.data().likes;
-				const notes = await getCloudUsereNotes(user);
-				const sortedNotes = sortNotes(notes, userLikes);
-				redisClient.setex(redisUserNotesKey, 1800, JSON.stringify(notes));
-				redisClient.setex(redisUserLikesKey, 3600, JSON.stringify(userLikes));
-				console.log("Firestore notes, Firestore likes");
-				res.status(200).json(sortedNotes);
-			}
-		});
-	} catch (error) {
-		console.log(error);
-		res.status(500).send(error);
-	}
-});
-
 // Gets all of the notes in storage
 app.get("/api/notes", async (req, res) => {
 	try {
@@ -185,6 +234,7 @@ app.post("/api/note", async (req, res) => {
 		redisDeleteMyNotes(author);
 		redisDeleteUserLikes(author);
 		redisDeleteCourse(courseCode);
+		redisDeleteUserNoteLikes(author);
 
 		const note = await notesRef.add({
 			name: name,
@@ -233,6 +283,8 @@ app.post("/api/notes/like-note", async (req, res) => {
 
 		redisDeleteUserLikes(user);
 		redisDeleteMyNotes(user);
+		redisDeleteUserNoteLikes(user);
+		redisDeleteDashboard(user);
 
 		// Add like
 		const likeDate = admin.firestore.Timestamp.fromDate(new Date());
@@ -258,6 +310,8 @@ app.post("/api/notes/unlike-note", async (req, res) => {
 		const { user, note } = req.body;
 		redisDeleteUserLikes(user);
 		redisDeleteMyNotes(user);
+		redisDeleteUserNoteLikes(user);
+		redisDeleteDashboard(user);
 
 		// Remove like document and note reference
 		const likes = await likesRef.where("note", "==", note).where("user", "==", user).get();
@@ -366,21 +420,47 @@ async function getCloudUsereNotes(user) {
 // ======================================================================================
 // Dashboard
 // ======================================================================================
-app.post("/api/dashboard/user", async (req, res) => {
+app.post("/api/dashboard", async (req, res) => {
 	try {
 		const { user } = req.body;
-		const snapshot = await notesRef.where("author", "==", user).get();
-		let downloadsArray = [];
-		let likesArray = [];
-		snapshot.docs.map((doc) => {
-			downloadsArray = downloadsArray.concat(doc.data().downloads);
-			likesArray = likesArray.concat(doc.data().likes);
-		});
-		res.status(200).json({
-			downloads: downloadsArray,
-			totalDownloads: downloadsArray.length,
-			likes: likesArray,
-			totalLikes: likesArray.length,
+		const redisDashboard = `/api/dashboard/${user}`;
+
+		// // If a users dashboard is cached...
+		redisClient.get(redisDashboard, async (err, result) => {
+			if (result) {
+				const dashboard = JSON.parse(result);
+				console.log("Dashboard from Redis");
+				res.status(200).json(dashboard);
+			} else {
+				let downloadsArray = [];
+				let likesArray = [];
+
+				const snapshot = await notesRef.where("author", "==", user).get();
+
+				for (let doc of snapshot.docs) {
+					for (let like of doc.data().likes) {
+						const likeDoc = await likesRef.doc(like.id).get();
+						const date = likeDoc.data().date.toDate();
+						likesArray.push(date);
+					}
+					const downloads = doc.data().downloads.map((download) => download.toDate());
+					downloadsArray = downloadsArray.concat(downloads);
+				}
+
+				downloadsArray = _.orderBy(downloadsArray, [], ["desc"]);
+				likesArray = _.orderBy(likesArray, [], ["desc"]);
+
+				const response = {
+					downloads: downloadsArray,
+					totalDownloads: downloadsArray.length,
+					likes: likesArray,
+					totalLikes: likesArray.length,
+				};
+
+				redisClient.setex(redisDashboard, 900, JSON.stringify(response));
+				console.log("Dashboard from Firetore");
+				res.status(200).json(response);
+			}
 		});
 	} catch (error) {
 		console.log(error);
@@ -539,6 +619,24 @@ function redisDeleteCourse(course) {
 
 function redisDeleteEnrolled(user) {
 	const redisKey = `/api/user/courses/${user}`;
+	redisClient.del(redisKey, async (error, result) => {
+		if (result) {
+			console.log(`Deleted key: ${redisKey}`);
+		}
+	});
+}
+
+function redisDeleteUserNoteLikes(user) {
+	const redisKey = `/api/notes/liked/${user}`;
+	redisClient.del(redisKey, async (error, result) => {
+		if (result) {
+			console.log(`Deleted key: ${redisKey}`);
+		}
+	});
+}
+
+function redisDeleteDashboard(user) {
+	const redisKey = `/api/dashboard/${user}`;
 	redisClient.del(redisKey, async (error, result) => {
 		if (result) {
 			console.log(`Deleted key: ${redisKey}`);
