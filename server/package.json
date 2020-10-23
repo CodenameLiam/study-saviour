@@ -3,6 +3,7 @@
 	"version": "1.0.0",
 	"description": "Study Savior Application",
 	"main": "server.js",
+	"type": "module",
 	"scripts": {
 		"start": "nodemon server.js",
 		"test": "echo \"Error: no test specified\" && exit 1"
@@ -11,8 +12,12 @@
 	"license": "ISC",
 	"dependencies": {
 		"axios": "^0.20.0",
+		"cors": "^2.8.5",
 		"express": "^4.17.1",
 		"firebase-admin": "^9.2.0",
-		"nodemon": "^2.0.6"
+		"lodash": "^4.17.20",
+		"nodemon": "^2.0.6",
+		"redis": "^3.0.2",
+		"response-time": "^2.3.2"
 	}
 }

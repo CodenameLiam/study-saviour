@@ -1,0 +1,49 @@
+.header {
+	height: 5rem;
+	background: $theme-peach;
+	background: $theme-gradient;
+	color: #ffffff;
+	display: flex;
+	z-index: 20;
+	position: relative;
+	justify-content: space-between;
+
+	.left {
+		display: flex;
+
+		.logo {
+			display: flex;
+			margin: auto;
+			margin-left: 1rem;
+
+			.logo-text {
+				margin-left: 1.5rem;
+				font-size: 2rem;
+				font-weight: 300;
+				.saviour {
+					font-weight: 600;
+				}
+			}
+		}
+	}
+
+	.right {
+		display: flex;
+		margin-right: 2rem;
+		.MuiFormControl-root {
+			height: 100%;
+			.MuiInputBase-root {
+				margin: auto;
+			}
+		}
+
+		.upload {
+			width: 15rem;
+			margin-left: 2rem;
+			.upload-text {
+				margin: auto;
+				font-size: 0.9rem;
+			}
+		}
+	}
+}

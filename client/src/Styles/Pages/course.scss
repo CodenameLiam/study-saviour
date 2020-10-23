@@ -1,0 +1,60 @@
+.course,
+.course-all {
+	.course-title {
+		position: relative;
+		text-align: center;
+		font-size: 2rem;
+		color: $theme-peach;
+		font-weight: 500;
+
+		.back-button {
+			position: absolute;
+			left: 0px;
+		}
+
+		.enroll-button {
+			position: absolute;
+			right: 0px;
+			color: $theme-peach;
+		}
+	}
+
+	.title-underline {
+		margin: auto;
+		width: 100%;
+		max-width: 12rem;
+		height: 0.25rem;
+		background: $theme-peach;
+		margin-bottom: 5rem;
+	}
+
+	.grow-appear {
+		width: 0%;
+	}
+
+	.grow-appear-active {
+		transition: all 1.5s ease-in-out;
+		width: 100%;
+	}
+
+	.top-notes {
+		.title {
+			color: #fc7c89;
+			padding-left: 1rem;
+			margin-bottom: 0.5rem;
+		}
+	}
+}
+
+.course-all {
+	.title {
+		color: #fc7c89;
+		padding-left: 1rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.course-all-container {
+		display: flex;
+		justify-content: center;
+	}
+}
