@@ -23,4 +23,5 @@
 
 # credentials
 /server/firebase-admin-token.js
-/client/FirebaseConfig.ts
+/client/src/FirebaseConfig.ts
+/client/src/FirebaseConf.ts
