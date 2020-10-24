@@ -1,3 +1,4 @@
+import Axios from "axios";
 import firebase from "firebase";
 
 export const register = (
@@ -10,7 +11,10 @@ export const register = (
 	firebase
 		.auth()
 		.createUserWithEmailAndPassword(email, password)
-		.then((user) => handleSuccess(user))
+		.then((user) =>
+			Axios.post("/api//user/create", { user: email }).then(() => handleSuccess(user))
+		)
+		// .then((user) => handleSuccess(user))
 		// .then(() => {
 		// 	const user = firebase.auth().currentUser;
 		// 	// user?.updateProfile({

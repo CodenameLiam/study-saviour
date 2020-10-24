@@ -8,7 +8,6 @@ import path from "path";
 import url from "url";
 import cors from "cors";
 import _ from "lodash";
-import { Console } from "console";
 
 // Express application
 const app = express();
@@ -31,7 +30,7 @@ const hashtagsRef = db.collection("hashtags");
 const coursesRef = db.collection("courses");
 
 // Define port
-const port = 5000;
+const port = 3000;
 
 // Define build path
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -113,12 +112,12 @@ app.post("/api/notes/user/liked", async (req, res) => {
 		redisClient.get(redisUserLikedNotesKey, async (err, result) => {
 			if (result) {
 				const sortedNotes = JSON.parse(result);
-				console.log("From Redis");
+				console.log("Liked notes from Redis");
 				res.status(200).json(sortedNotes);
 			} else {
 				const sortedNotes = await getCloudUserNoteLikes(user);
 				redisClient.setex(redisUserLikedNotesKey, 3600, JSON.stringify(sortedNotes));
-				console.log("From Firestore");
+				console.log("Liked notes from Firestore");
 				res.status(200).json(sortedNotes);
 			}
 		});
@@ -471,6 +470,8 @@ app.post("/api/dashboard", async (req, res) => {
 // ======================================================================================
 // User
 // ======================================================================================
+
+// Gets information pertaining to a particular user
 app.post("/api/user", async (req, res) => {
 	try {
 		const { user } = req.body;
@@ -479,15 +480,27 @@ app.post("/api/user", async (req, res) => {
 		redisClient.get(redisKey, async (err, result) => {
 			if (result) {
 				const user = JSON.parse(result);
-				console.log("From Redis");
+				console.log("User from Redis");
 				res.status(200).json(user);
 			} else {
 				const doc = await userRef.doc(user).get();
 				redisClient.setex(redisKey, 3600, JSON.stringify(doc.data()));
-				console.log("From Firestore");
+				console.log("User from Firestore");
 				res.status(200).json(doc.data());
 			}
 		});
+	} catch (error) {
+		console.log(error);
+		res.status(500).send(error);
+	}
+});
+
+// Creates a new user
+app.post("/api/user/create", async (req, res) => {
+	try {
+		const { user } = req.body;
+		await userRef.doc(user).set({ courses: [], likes: [], notes: [] });
+		res.status(200).send(`${user} created!`);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send(error);
@@ -545,13 +558,13 @@ app.get("/api/courses", async (req, res) => {
 		redisClient.get(redisKey, async (err, result) => {
 			if (result) {
 				const courses = JSON.parse(result);
-				console.log("From Redis");
+				console.log("Courses from Redis");
 				res.status(200).json(courses);
 			} else {
 				const snapshot = await coursesRef.get();
 				const courses = snapshot.docs.map((doc) => doc.data().name);
 				redisClient.setex(redisKey, 3600, JSON.stringify(courses));
-				console.log("From Firestore");
+				console.log("Courses from Firestore");
 				res.status(200).json(courses);
 			}
 		});
