@@ -13,9 +13,6 @@ export default function Routes() {
 				<PrivateRoute exact path="/courses/:name" component={Course} />
 				<PrivateRoute exact path="/my-notes" component={MyNotes} />
 				<PrivateRoute exact path="/liked-notes" component={LikedNotes} />
-				{/* <PrivateRoute path="/my-notes" component={MyNotes} />
-					<PrivateRoute path="/liked-notes" component={LikedNotes} />
-					<PrivateRoute path="/search-notes" component={SearchNotes} /> */}
 				<Route path="/login" component={Login} />
 				<Route path="/register" component={Register} />
 				<Route path="/404" component={PageNotFound} />

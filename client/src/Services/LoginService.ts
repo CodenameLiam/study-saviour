@@ -14,13 +14,6 @@ export const register = (
 		.then((user) =>
 			Axios.post("/api//user/create", { user: email }).then(() => handleSuccess(user))
 		)
-		// .then((user) => handleSuccess(user))
-		// .then(() => {
-		// 	const user = firebase.auth().currentUser;
-		// 	// user?.updateProfile({
-		// 	// 	displayName: username,
-		// 	// });
-		// })
 		.catch((e) => handleError(e));
 };
 

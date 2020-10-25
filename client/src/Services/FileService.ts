@@ -14,7 +14,7 @@ export const upload = (
 };
 
 export const download = (noteId: string, noteName: string) => {
-	const storageRef = firebase.storage().ref();
+	const storageRef = firebase.storage().ref(); // Storage reference
 	storageRef
 		.child(`notes/${noteId}/${noteName}.pdf`)
 		.getDownloadURL()
